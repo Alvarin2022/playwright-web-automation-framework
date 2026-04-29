@@ -1,0 +1,24 @@
+{
+  "name": "playwright-web-automation-framework",
+  "version": "1.0.0",
+  "description": "Web automation testing framework built with Playwright + TypeScript using Page Object Model. Includes CI/CD with GitHub Actions.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alvarin2022/playwright-web-automation-framework.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Alvarin2022/playwright-web-automation-framework/issues"
+  },
+  "homepage": "https://github.com/Alvarin2022/playwright-web-automation-framework#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "dotenv": "^17.4.2"
+  }
+}
