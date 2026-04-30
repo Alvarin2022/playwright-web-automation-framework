@@ -71,6 +71,20 @@ export const Credentials = {
         },
     },
 } as const;
+/**
+ * Catálogo de productos disponibles en SauceDemo.
+ * Centralizar los nombres evita strings mágicos en los tests.
+ */
+export const PRODUCTS = {
+    BACKPACK: 'Sauce Labs Backpack',
+    BIKE_LIGHT: 'Sauce Labs Bike Light',
+    BOLT_TSHIRT: 'Sauce Labs Bolt T-Shirt',
+    FLEECE_JACKET: 'Sauce Labs Fleece Jacket',
+    ONESIE: 'Sauce Labs Onesie',
+    RED_TSHIRT: 'Test.allTheThings() T-Shirt (Red)',
+} as const;
+
+export type ProductName = typeof PRODUCTS[keyof typeof PRODUCTS];
 
 export const URLS_BY_ENV = {
     PROD: 'https://www.saucedemo.com',
