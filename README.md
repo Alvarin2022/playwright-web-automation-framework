@@ -1,7 +1,7 @@
 # Playwright Web Automation Framework
 
-[![Playwright Tests](https://github.com/TU-USUARIO/playwright-web-automation-framework/actions/workflows/playwright.yml/badge.svg)](https://github.com/TU-USUARIO/playwright-web-automation-framework/actions/workflows/playwright.yml)
-[![Test Report](https://img.shields.io/badge/Test%20Report-Live-blue?logo=github)](https://TU-USUARIO.github.io/playwright-web-automation-framework/)
+[![Playwright Tests](https://github.com/Alvarin2022/playwright-web-automation-framework/actions/workflows/playwright.yml/badge.svg)](https://github.com/TU-USUARIO/playwright-web-automation-framework/actions/workflows/playwright.yml)
+[![Test Report](https://img.shields.io/badge/Test%20Report-Live-blue?logo=github)](https://Alvarin2022.github.io/playwright-web-automation-framework/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.49+-green?logo=playwright)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,7 +10,7 @@ End-to-end test automation framework for [SauceDemo](https://www.saucedemo.com/)
 
 ## 📊 Live Test Report
 
-The latest test run is published automatically: **[View Live Report](https://TU-USUARIO.github.io/playwright-web-automation-framework/)**
+The latest test run is published automatically: **[View Live Report](https://Alvarin2022.github.io/playwright-web-automation-framework/)**
 
 ## 🎯 Features
 
@@ -76,7 +76,7 @@ This pattern allows DOM changes to be fixed in one file without touching test lo
 ### Installation
 
 ```bash
-git clone https://github.com/TU-USUARIO/playwright-web-automation-framework.git
+git clone https://github.com/Alvarin2022/playwright-web-automation-framework.git
 cd playwright-web-automation-framework
 npm install
 npx playwright install
@@ -155,4 +155,4 @@ Tests are organized with descriptive tags:
 
 ## 📄 License
 
-MIT © [Tu Nombre]
+MIT © [Alvaro Morales]
