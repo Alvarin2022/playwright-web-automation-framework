@@ -1,27 +1,187 @@
-name: Playwright Tests
+name: Playwright E2E Tests
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
   pull_request:
-    branches: [ main, master ]
+    branches: [main]
+  schedule:
+    # Corre todos los días a las 6 AM UTC (3 AM Argentina)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - smoke
+          - login
+          - purchase
+          - negative
+      browser:
+        description: 'Browser to run tests on'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - chromium
+          - firefox
+          - webkit
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
 jobs:
+  # =========================================================================
+  # JOB 1: Run tests in parallel across multiple browsers
+  # =========================================================================
   test:
-    timeout-minutes: 60
+    name: Run Tests (${{ matrix.browser }})
+    timeout-minutes: 30
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Determine test command
+        id: test-cmd
+        run: |
+          SUITE="${{ github.event.inputs.test_suite || 'all' }}"
+          BROWSER_INPUT="${{ github.event.inputs.browser || 'all' }}"
+
+          # Skip job if a specific browser was requested and this isn't it
+          if [ "$BROWSER_INPUT" != "all" ] && [ "$BROWSER_INPUT" != "${{ matrix.browser }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "skip=false" >> $GITHUB_OUTPUT
+
+          # Build grep argument based on suite
+          case "$SUITE" in
+            smoke)    echo "grep=--grep @smoke" >> $GITHUB_OUTPUT ;;
+            login)    echo "grep=--grep @login" >> $GITHUB_OUTPUT ;;
+            purchase) echo "grep=--grep @purchase" >> $GITHUB_OUTPUT ;;
+            negative) echo "grep=--grep @negative" >> $GITHUB_OUTPUT ;;
+            *)        echo "grep=" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Run Playwright tests
+        if: steps.test-cmd.outputs.skip == 'false'
+        run: npx playwright test --project=${{ matrix.browser }} ${{ steps.test-cmd.outputs.grep }} --reporter=blob
+        env:
+          HEADLESS: true
+          USE_PIPELINE_CONFIG: true
+
+      - name: Upload blob report
+        if: always() && steps.test-cmd.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.browser }}
+          path: blob-report
+          retention-days: 14
+
+      - name: Upload logs
+        if: always() && steps.test-cmd.outputs.skip == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.browser }}
+          path: logs/
+          retention-days: 7
+
+  # =========================================================================
+  # JOB 2: Merge reports from all browsers into one HTML report
+  # =========================================================================
+  merge-reports:
+    name: Merge HTML Reports
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all blob reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - name: Upload combined HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: playwright-report
+          retention-days: 30
+
+  # =========================================================================
+  # JOB 3: Deploy report to GitHub Pages (only on main branch)
+  # =========================================================================
+  deploy-report:
+    name: Deploy Report to GitHub Pages
+    if: always() && github.ref == 'refs/heads/main'
+    needs: [merge-reports]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download HTML report
+        uses: actions/download-artifact@v4
+        with:
+          name: html-report
+          path: playwright-report
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
