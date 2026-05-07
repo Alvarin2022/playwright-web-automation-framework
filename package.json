@@ -3,7 +3,21 @@
   "version": "1.0.0",
   "description": "Web automation testing framework built with Playwright + TypeScript using Page Object Model. Includes CI/CD with GitHub Actions.",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "playwright test",
+  "test:chromium": "playwright test --project=chromium",
+  "test:firefox": "playwright test --project=firefox",
+  "test:webkit": "playwright test --project=webkit",
+  "test:smoke": "playwright test --grep @smoke",
+  "test:negative": "playwright test --grep @negative",
+  "test:purchase": "playwright test --grep @purchase",
+  "test:login": "playwright test --grep @login",
+  "test:e2e": "playwright test --grep @e2e",
+  "test:ui": "playwright test --ui",
+  "test:headed": "playwright test --headed",
+  "test:debug": "playwright test --debug",
+  "report": "playwright show-report"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Alvarin2022/playwright-web-automation-framework.git"
@@ -19,6 +33,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "winston": "^3.19.0"
   }
 }

@@ -1,66 +1,64 @@
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../src/PageObjectsModel/LoggedOutPages/Login/LoginPage';
-import { configurator } from '../../src/Configuration/Configurator';
+import { test, expect } from '../../src/fixtures/baseTest';
 import { URLS } from '../../src/config/urls';
+import { log } from '../../src/Helpers/Logger';
+import {
+    POSITIVE_LOGIN_SCENARIOS,
+    NEGATIVE_LOGIN_SCENARIOS,
+} from '../../src/data/loginScenarios';
 
 test.describe('Login Tests @login', () => {
 
-    test('Should login successfully with standard user @smoke', async ({ page }) => {
-        // Arrange
-        const loginPage = new LoginPage(page);
-        const credentials = configurator.getCredentialsFor('STANDARD');
+    /* ============================================================
+     * POSITIVE SCENARIOS - Data-driven
+     * Un solo bloque de test corre N veces, una por cada escenario.
+     * ============================================================ */
+    POSITIVE_LOGIN_SCENARIOS.forEach((scenario) => {
+        const tagString = scenario.tags?.join(' ') ?? '';
+        test(`${scenario.description} ${tagString}`, async ({ page, loginPage, config }) => {
+            log.step(scenario.description, 'Starting positive login test');
 
-        await loginPage.goto();
-        await loginPage.assertLoginScreenVisible();
+            // Arrange
+            const credentials = config.getCredentialsFor(scenario.userType!);
 
-        // Act
-        await loginPage.login(credentials.username, credentials.password);
+            // Act
+            await loginPage.goto();
+            await loginPage.assertLoginScreenVisible();
+            await loginPage.login(credentials.username, credentials.password);
 
-        // Assert
-        await expect(page).toHaveURL(new RegExp(URLS.INVENTORY));
+            // Assert
+            await expect(page, 'Should redirect to inventory page after successful login')
+                .toHaveURL(new RegExp(URLS.INVENTORY));
+
+            log.info(`✅ Login successful for ${scenario.userType}`);
+        });
     });
 
-    test('Should display error when logging in with locked user', async ({ page }) => {
-        // Arrange
-        const loginPage = new LoginPage(page);
-        const credentials = configurator.getCredentialsFor('LOCKED');
+    /* ============================================================
+     * NEGATIVE SCENARIOS - Data-driven
+     * ============================================================ */
+    NEGATIVE_LOGIN_SCENARIOS.forEach((scenario) => {
+        const tagString = scenario.tags?.join(' ') ?? '';
+        test(`${scenario.description} ${tagString}`, async ({ loginPage, config }) => {
+            log.step(scenario.description, 'Starting negative login test');
 
-        await loginPage.goto();
-        await loginPage.assertLoginScreenVisible();
+            // Arrange - resuelve credenciales según el tipo de escenario
+            const username = scenario.userType
+                ? config.getCredentialsFor(scenario.userType).username
+                : scenario.customUsername ?? '';
+            const password = scenario.userType
+                ? config.getCredentialsFor(scenario.userType).password
+                : scenario.customPassword ?? '';
 
-        // Act
-        await loginPage.login(credentials.username, credentials.password);
+            // Act
+            await loginPage.goto();
+            await loginPage.assertLoginScreenVisible();
+            await loginPage.login(username, password);
 
-        // Assert
-        await loginPage.assertErrorMessage('Sorry, this user has been locked out');
-    });
+            // Assert
+            await loginPage.assertErrorMessage(scenario.expectedErrorMessage!);
 
-    test('Should display error when password is empty', async ({ page }) => {
-        // Arrange
-        const loginPage = new LoginPage(page);
-        const credentials = configurator.getCredentialsFor('STANDARD');
-
-        await loginPage.goto();
-
-        // Act
-        await loginPage.login(credentials.username, '');
-
-        // Assert
-        await loginPage.assertErrorMessage('Password is required');
-    });
-
-    test('Should display error when username is empty', async ({ page }) => {
-        // Arrange
-        const loginPage = new LoginPage(page);
-        const credentials = configurator.getCredentialsFor('STANDARD');
-
-        await loginPage.goto();
-
-        // Act
-        await loginPage.login('', credentials.password);
-
-        // Assert
-        await loginPage.assertErrorMessage('Username is required');
+            log.info(`✅ Expected error displayed: "${scenario.expectedErrorMessage}"`);
+        });
     });
 
 });

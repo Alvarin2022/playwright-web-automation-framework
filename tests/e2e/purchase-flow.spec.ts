@@ -1,78 +1,59 @@
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../src/PageObjectsModel/LoggedOutPages/Login/LoginPage';
-import { InventoryPage } from '../../src/PageObjectsModel/LoggedInPages/Inventory/InventoryPage';
-import { CartPage } from '../../src/PageObjectsModel/LoggedInPages/Cart/CartPage';
-import { CheckoutInfoPage } from '../../src/PageObjectsModel/LoggedInPages/CheckoutFlow/CheckoutInfo/CheckoutInfoPage';
-import { CheckoutOverviewPage } from '../../src/PageObjectsModel/LoggedInPages/CheckoutFlow/CheckoutOverview/CheckoutOverviewPage';
-import { CheckoutCompletePage } from '../../src/PageObjectsModel/LoggedInPages/CheckoutFlow/CheckoutComplete/CheckoutCompletePage';
-import { configurator } from '../../src/Configuration/Configurator';
+import { test, expect } from '../../src/fixtures/baseTest';
 import { PRODUCTS } from '../../src/Calls/Constants';
-import { getRandomName, getRandomZipCode } from '../../src/Helpers/RandomGenerator';
 import { URLS } from '../../src/config/urls';
+import { log } from '../../src/Helpers/Logger';
 
 test.describe('Purchase Flow @purchase', () => {
 
-    test('Should complete a full purchase with multiple products @smoke @e2e', async ({ page }) => {
-        // === Page instances ===
-        const loginPage = new LoginPage(page);
-        const inventoryPage = new InventoryPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutInfoPage = new CheckoutInfoPage(page);
-        const checkoutOverviewPage = new CheckoutOverviewPage(page);
-        const checkoutCompletePage = new CheckoutCompletePage(page);
-
-        // === Test data ===
-        const credentials = configurator.getCredentialsFor('STANDARD');
+    test('Should complete a full purchase with multiple products @smoke @e2e', async ({
+        page,
+        loggedInUser,        // ← login automático, datos del usuario disponibles
+        inventoryPage,
+        cartPage,
+        checkoutInfoPage,
+        checkoutOverviewPage,
+        checkoutCompletePage,
+        newUserSession,      // ← datos de usuario "fresco" para checkout
+    }) => {
         const productsToBuy = [PRODUCTS.BACKPACK, PRODUCTS.BIKE_LIGHT, PRODUCTS.BOLT_TSHIRT];
-        const fullName = getRandomName();
-        const firstName = fullName.split(' ')[0];
-        const lastName = fullName.split(' ')[1];
-        const postalCode = getRandomZipCode();
 
-        // === Step 1: Login ===
-        await loginPage.goto();
-        await loginPage.assertLoginScreenVisible();
-        await loginPage.login(credentials.username, credentials.password);
-
-        // === Step 2: Verify inventory and add products ===
-        await inventoryPage.assertInventoryScreenVisible();
-        await inventoryPage.assertProductsCount(6);
+        log.step('Full Purchase E2E', 'Adding products to cart');
         await inventoryPage.addMultipleProductsToCart(productsToBuy);
         await inventoryPage.header.assertCartBadgeCount(productsToBuy.length);
 
-        // === Step 3: Go to cart and validate ===
+        log.step('Full Purchase E2E', 'Navigating to cart');
         await inventoryPage.header.goToCart();
         await cartPage.assertCartScreenVisible();
         await cartPage.assertProductsInCart(productsToBuy);
 
-        // === Step 4: Checkout - Step 1 (info) ===
+        log.step('Full Purchase E2E', 'Filling checkout information');
         await cartPage.proceedToCheckout();
         await checkoutInfoPage.assertCheckoutInfoScreenVisible();
-        await checkoutInfoPage.fillCheckoutInformation(firstName, lastName, postalCode);
+        await checkoutInfoPage.fillCheckoutInformation(
+            newUserSession.firstName,
+            newUserSession.lastName,
+            newUserSession.postalCode
+        );
         await checkoutInfoPage.clickContinue();
 
-        // === Step 5: Checkout - Step 2 (overview) ===
+        log.step('Full Purchase E2E', 'Validating overview and finishing');
         await checkoutOverviewPage.assertOverviewScreenVisible();
         await checkoutOverviewPage.assertProductsInOverview(productsToBuy);
         await checkoutOverviewPage.assertTotalsAreConsistent();
         await checkoutOverviewPage.clickFinish();
 
-        // === Step 6: Confirmation ===
+        log.step('Full Purchase E2E', 'Confirming order');
         await checkoutCompletePage.assertOrderConfirmed();
         await expect(page).toHaveURL(new RegExp(URLS.CHECKOUT_COMPLETE));
+
+        log.info(`🎉 Purchase completed for ${newUserSession.firstName} ${newUserSession.lastName}`);
     });
 
-    test('Should remove a product from cart before checkout', async ({ page }) => {
-        const loginPage = new LoginPage(page);
-        const inventoryPage = new InventoryPage(page);
-        const cartPage = new CartPage(page);
-
-        const credentials = configurator.getCredentialsFor('STANDARD');
-
-        await loginPage.goto();
-        await loginPage.login(credentials.username, credentials.password);
-        await inventoryPage.assertInventoryScreenVisible();
-
+    test('Should remove a product from cart before checkout', async ({
+        loggedInUser,
+        inventoryPage,
+        cartPage,
+    }) => {
         await inventoryPage.addMultipleProductsToCart([PRODUCTS.BACKPACK, PRODUCTS.BIKE_LIGHT]);
         await inventoryPage.header.assertCartBadgeCount(2);
 
@@ -83,16 +64,12 @@ test.describe('Purchase Flow @purchase', () => {
         await cartPage.header.assertCartBadgeCount(1);
     });
 
-    test('Should display error when checkout info is incomplete', async ({ page }) => {
-        const loginPage = new LoginPage(page);
-        const inventoryPage = new InventoryPage(page);
-        const cartPage = new CartPage(page);
-        const checkoutInfoPage = new CheckoutInfoPage(page);
-
-        const credentials = configurator.getCredentialsFor('STANDARD');
-
-        await loginPage.goto();
-        await loginPage.login(credentials.username, credentials.password);
+    test('Should display error when checkout info is incomplete', async ({
+        loggedInUser,
+        inventoryPage,
+        cartPage,
+        checkoutInfoPage,
+    }) => {
         await inventoryPage.addProductToCart(PRODUCTS.BACKPACK);
         await inventoryPage.header.goToCart();
         await cartPage.proceedToCheckout();
