@@ -2,20 +2,33 @@ import { test, expect } from '../../src/fixtures/baseTest';
 import { PRODUCTS } from '../../src/Calls/Constants';
 import { URLS } from '../../src/config/urls';
 import { log } from '../../src/Helpers/Logger';
+import { Allure } from '../../src/Helpers/AllureSteps';
 
 test.describe('Purchase Flow @purchase', () => {
 
+    test.beforeEach(async () => {
+        await Allure.epic('E-commerce');
+        await Allure.feature('Purchase Flow');
+    });
+
     test('Should complete a full purchase with multiple products @smoke @e2e', async ({
         page,
-        loggedInUser,        // ← login automático, datos del usuario disponibles
+        loggedInUser,
         inventoryPage,
         cartPage,
         checkoutInfoPage,
         checkoutOverviewPage,
         checkoutCompletePage,
-        newUserSession,      // ← datos de usuario "fresco" para checkout
+        newUserSession,
     }) => {
+        await Allure.story('End-to-End Purchase');
+        await Allure.severity('blocker');
+        await Allure.description('Validates the complete purchase flow: login → product selection → cart → checkout → confirmation.');
+        await Allure.parameter('Customer', `${newUserSession.firstName} ${newUserSession.lastName}`);
+        await Allure.parameter('Postal Code', newUserSession.postalCode);
+
         const productsToBuy = [PRODUCTS.BACKPACK, PRODUCTS.BIKE_LIGHT, PRODUCTS.BOLT_TSHIRT];
+        await Allure.attachJSON('Products to buy', productsToBuy);
 
         log.step('Full Purchase E2E', 'Adding products to cart');
         await inventoryPage.addMultipleProductsToCart(productsToBuy);
@@ -54,6 +67,9 @@ test.describe('Purchase Flow @purchase', () => {
         inventoryPage,
         cartPage,
     }) => {
+        await Allure.story('Cart Management');
+        await Allure.severity('critical');
+
         await inventoryPage.addMultipleProductsToCart([PRODUCTS.BACKPACK, PRODUCTS.BIKE_LIGHT]);
         await inventoryPage.header.assertCartBadgeCount(2);
 
@@ -70,15 +86,17 @@ test.describe('Purchase Flow @purchase', () => {
         cartPage,
         checkoutInfoPage,
     }) => {
+        await Allure.story('Checkout Validations');
+        await Allure.severity('critical');
+        await Allure.description('Validates that mandatory fields trigger errors during checkout.');
+
         await inventoryPage.addProductToCart(PRODUCTS.BACKPACK);
         await inventoryPage.header.goToCart();
         await cartPage.proceedToCheckout();
 
-        // Intentar continuar sin llenar nada
         await checkoutInfoPage.clickContinue();
         await checkoutInfoPage.assertErrorMessage('First Name is required');
 
-        // Llenar solo first name, falta last name
         await checkoutInfoPage.fillCheckoutInformation('John', '', '');
         await checkoutInfoPage.clickContinue();
         await checkoutInfoPage.assertErrorMessage('Last Name is required');

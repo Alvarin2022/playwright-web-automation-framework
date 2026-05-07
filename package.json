@@ -4,7 +4,7 @@
   "description": "Web automation testing framework built with Playwright + TypeScript using Page Object Model. Includes CI/CD with GitHub Actions.",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
+  "test": "playwright test",
   "test:chromium": "playwright test --project=chromium",
   "test:firefox": "playwright test --project=firefox",
   "test:webkit": "playwright test --project=webkit",
@@ -16,7 +16,11 @@
   "test:ui": "playwright test --ui",
   "test:headed": "playwright test --headed",
   "test:debug": "playwright test --debug",
-  "report": "playwright show-report"
+  "report": "playwright show-report",
+  "allure:generate": "allure generate allure-results --clean -o allure-report",
+  "allure:serve": "allure serve allure-results",
+  "allure:open": "allure open allure-report",
+  "allure:report": "npm run allure:generate && npm run allure:serve"
 },
   "repository": {
     "type": "git",
@@ -33,6 +37,8 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
+    "allure-commandline": "^2.40.0",
+    "allure-playwright": "^3.7.2",
     "dotenv": "^17.4.2",
     "winston": "^3.19.0"
   }

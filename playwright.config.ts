@@ -8,9 +8,24 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { open: 'never' }],
     ['list'],
-  ],
+    ['html', { open: 'never', outputFolder: 'playwright-report' }],
+    ['blob', { outputDir: 'blob-report' }],
+    [
+        'allure-playwright',
+        {
+            detail: true,
+            outputFolder: 'allure-results',
+            suiteTitle: false,
+            environmentInfo: {
+                framework: 'Playwright',
+                language: 'TypeScript',
+                node_version: process.version,
+                ci: process.env.CI ?? 'false',
+            },
+        },
+    ],
+],
   use: {
     baseURL: process.env.BASE_URL || 'https://www.saucedemo.com',
     trace: 'on-first-retry',
